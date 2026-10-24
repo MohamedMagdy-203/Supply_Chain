@@ -25,3 +25,11 @@ mlruns/
 .DS_Store
 .idea/
 .vscode/
+
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/features.parquet
+!data/processed/weekly.parquet
+!data/processed/series_type.csv
+!data/processed/splits.json
+!data/processed/sample_items.csv
