@@ -1,0 +1,400 @@
+{
+  "series_id": "CA_3__FOODS_3_120",
+  "origin_week": 275,
+  "target_week": 276,
+  "actual": 327.0,
+  "quantiles": {
+    "q10": {
+      "base_value": 6.204,
+      "prediction": 95.144,
+      "top_features": [
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 32.674
+        },
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 19.452
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 9.321
+        },
+        {
+          "feature": "lag_2",
+          "value": "485.0",
+          "shap": 9.113
+        },
+        {
+          "feature": "weeks_since_sale",
+          "value": "0.0",
+          "shap": 5.96
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 4.27
+        },
+        {
+          "feature": "lag_3",
+          "value": "503.0",
+          "shap": 4.041
+        },
+        {
+          "feature": "lag_4",
+          "value": "464.0",
+          "shap": 2.098
+        },
+        {
+          "feature": "lag_13",
+          "value": "428.0",
+          "shap": 1.357
+        },
+        {
+          "feature": "lag_8",
+          "value": "478.0",
+          "shap": 0.955
+        }
+      ]
+    },
+    "q25": {
+      "base_value": 9.748,
+      "prediction": 364.146,
+      "top_features": [
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 142.015
+        },
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 49.616
+        },
+        {
+          "feature": "lag_2",
+          "value": "485.0",
+          "shap": 42.58
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 36.215
+        },
+        {
+          "feature": "lag_3",
+          "value": "503.0",
+          "shap": 32.28
+        },
+        {
+          "feature": "weeks_since_sale",
+          "value": "0.0",
+          "shap": 20.845
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 16.876
+        },
+        {
+          "feature": "lag_52",
+          "value": "556.0",
+          "shap": 7.2
+        },
+        {
+          "feature": "sell_price",
+          "value": "4.980000019073486",
+          "shap": 4.644
+        },
+        {
+          "feature": "lag_4",
+          "value": "464.0",
+          "shap": 1.632
+        }
+      ]
+    },
+    "q50": {
+      "base_value": 13.257,
+      "prediction": 387.46,
+      "top_features": [
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 136.573
+        },
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 128.585
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 23.793
+        },
+        {
+          "feature": "roll_std_13",
+          "value": "175.56462028961295",
+          "shap": 18.407
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 16.553
+        },
+        {
+          "feature": "lag_2",
+          "value": "485.0",
+          "shap": 10.809
+        },
+        {
+          "feature": "weeks_since_sale",
+          "value": "0.0",
+          "shap": 10.256
+        },
+        {
+          "feature": "lag_52",
+          "value": "556.0",
+          "shap": 6.179
+        },
+        {
+          "feature": "roll_std_8",
+          "value": "59.46607676410387",
+          "shap": 5.815
+        },
+        {
+          "feature": "sell_price",
+          "value": "4.980000019073486",
+          "shap": 5.652
+        }
+      ]
+    },
+    "q75": {
+      "base_value": 17.096,
+      "prediction": 447.029,
+      "top_features": [
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 190.583
+        },
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 134.505
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 19.724
+        },
+        {
+          "feature": "lag_52",
+          "value": "556.0",
+          "shap": 19.53
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 16.215
+        },
+        {
+          "feature": "roll_std_13",
+          "value": "175.56462028961295",
+          "shap": 9.699
+        },
+        {
+          "feature": "roll_std_8",
+          "value": "59.46607676410387",
+          "shap": 8.229
+        },
+        {
+          "feature": "lag_2",
+          "value": "485.0",
+          "shap": 7.934
+        },
+        {
+          "feature": "lag_4",
+          "value": "464.0",
+          "shap": 7.213
+        },
+        {
+          "feature": "roll_std_4",
+          "value": "52.002403790594116",
+          "shap": 4.673
+        }
+      ]
+    },
+    "q90": {
+      "base_value": 21.02,
+      "prediction": 479.445,
+      "top_features": [
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 247.734
+        },
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 114.764
+        },
+        {
+          "feature": "lag_52",
+          "value": "556.0",
+          "shap": 33.483
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 29.435
+        },
+        {
+          "feature": "roll_std_13",
+          "value": "175.56462028961295",
+          "shap": 20.195
+        },
+        {
+          "feature": "lag_2",
+          "value": "485.0",
+          "shap": -19.014
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 16.025
+        },
+        {
+          "feature": "roll_std_8",
+          "value": "59.46607676410387",
+          "shap": 9.4
+        },
+        {
+          "feature": "roll_std_4",
+          "value": "52.002403790594116",
+          "shap": 7.374
+        },
+        {
+          "feature": "lag_13",
+          "value": "428.0",
+          "shap": 6.355
+        }
+      ]
+    },
+    "q95": {
+      "base_value": 23.507,
+      "prediction": 524.898,
+      "top_features": [
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 249.572
+        },
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 125.162
+        },
+        {
+          "feature": "lag_52",
+          "value": "556.0",
+          "shap": 28.249
+        },
+        {
+          "feature": "roll_std_13",
+          "value": "175.56462028961295",
+          "shap": 22.326
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 22.214
+        },
+        {
+          "feature": "roll_std_8",
+          "value": "59.46607676410387",
+          "shap": 15.935
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 15.498
+        },
+        {
+          "feature": "lag_13",
+          "value": "428.0",
+          "shap": 8.525
+        },
+        {
+          "feature": "roll_std_4",
+          "value": "52.002403790594116",
+          "shap": 8.391
+        },
+        {
+          "feature": "lag_8",
+          "value": "478.0",
+          "shap": 8.36
+        }
+      ]
+    },
+    "q99": {
+      "base_value": 29.443,
+      "prediction": 501.551,
+      "top_features": [
+        {
+          "feature": "lag_1",
+          "value": "385.0",
+          "shap": 208.001
+        },
+        {
+          "feature": "roll_mean_4",
+          "value": "459.25",
+          "shap": 128.856
+        },
+        {
+          "feature": "lag_52",
+          "value": "556.0",
+          "shap": 61.348
+        },
+        {
+          "feature": "roll_std_13",
+          "value": "175.56462028961295",
+          "shap": 25.525
+        },
+        {
+          "feature": "roll_mean_13",
+          "value": "374.53846153846155",
+          "shap": 12.738
+        },
+        {
+          "feature": "lag_13",
+          "value": "428.0",
+          "shap": 9.76
+        },
+        {
+          "feature": "roll_std_8",
+          "value": "59.46607676410387",
+          "shap": 8.841
+        },
+        {
+          "feature": "roll_mean_8",
+          "value": "462.25",
+          "shap": 7.634
+        },
+        {
+          "feature": "lag_4",
+          "value": "464.0",
+          "shap": 6.387
+        },
+        {
+          "feature": "lag_8",
+          "value": "478.0",
+          "shap": 5.931
+        }
+      ]
+    }
+  }
+}
