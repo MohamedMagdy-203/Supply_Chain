@@ -1,4 +1,5 @@
-"""Compare forecast models on validation, then perform final test evaluation.
+
+"""Compare deep, LightGBM, Ridge-linear, and quantile-regression forecasts on validation, then evaluate test.
 
 IMPORTANT:
 - Run this script only after model selection and tuning are complete.
@@ -16,7 +17,7 @@ import pandas as pd
 from src.config import KEY_COLS, PREDICTIONS_DIR, QUANTILE_LEVELS
 from src.data import load_features
 
-MODEL_NAMES = ("deep", "lgbm", "linear")
+MODEL_NAMES = ("deep", "lgbm", "linear", "quantreg")
 
 
 def mean_pinball_loss(y_true: np.ndarray, predictions: pd.DataFrame) -> float:
@@ -78,8 +79,10 @@ def score_split(
     )
 
     # Compare key sets, not just row counts: this catches one missing row plus
-    # one unexpected row, which a row-count-only check would miss.
-    expected_keys = set(map(tuple, truth_keys[KEY_COLS].itertuples(index=False, name=None)))
+    # one unexpected row, which a row-count-only check would otherwise miss.
+    expected_keys = set(
+        map(tuple, truth_keys[KEY_COLS].itertuples(index=False, name=None))
+    )
     actual_keys = set(
         map(tuple, split_predictions[KEY_COLS].itertuples(index=False, name=None))
     )
@@ -92,7 +95,7 @@ def score_split(
             f"matched={len(split_predictions)}, expected={len(truth)}."
         )
 
-    # The merge starts from the prediction rows; align targets explicitly by key.
+    # Align targets explicitly by forecast key.
     scored = predictions.merge(
         truth[KEY_COLS + ["y_next"]],
         on=KEY_COLS,
@@ -103,37 +106,41 @@ def score_split(
     if len(scored) != len(truth):
         raise ValueError(f"{model_name}: not all {split_name} targets were matched.")
 
-    # Ensure the prediction quantiles are ordered, as required by the project.
+    # Check quantile ordering and nonnegative sales forecasts.
     pred_values = scored[list(QUANTILE_LEVELS)].to_numpy(dtype=float)
     if (np.diff(pred_values, axis=1) < -1e-10).any():
-        raise ValueError(f"{model_name}: crossing quantiles found in {split_name} predictions.")
+        raise ValueError(
+            f"{model_name}: crossing quantiles found in {split_name} predictions."
+        )
     if (pred_values < 0).any():
-        raise ValueError(f"{model_name}: negative predictions found in {split_name} predictions.")
+        raise ValueError(
+            f"{model_name}: negative predictions found in {split_name} predictions."
+        )
 
     return mean_pinball_loss(scored["y_next"].to_numpy(dtype=float), scored)
 
 
 def main() -> None:
-    # Freeze these split-specific truth tables once so every model uses exactly
-    # the same rows and target values for each reported metric.
+    # Use exactly the existing validation and test splits.
     validation = load_features("val")[KEY_COLS + ["y_next"]].copy()
     test = load_features("test")[KEY_COLS + ["y_next"]].copy()
 
     if validation.duplicated(KEY_COLS).any() or test.duplicated(KEY_COLS).any():
-        raise ValueError("Feature data contains duplicate (series_id, origin_week) keys.")
+        raise ValueError(
+            "Feature data contains duplicate (series_id, origin_week) keys."
+        )
 
     predictions_by_model = {
         name: load_and_validate_predictions(name) for name in MODEL_NAMES
     }
 
-    # Every saved model file should contain exactly the same validation + test
-    # forecast keys. This also catches unexpected keys that an inner merge would
-    # otherwise silently discard during split-specific scoring.
+    # Require each model to contain exactly the validation + test forecast keys.
     expected_all_keys = set(
         map(
             tuple,
-            pd.concat([validation[KEY_COLS], test[KEY_COLS]], ignore_index=True)
-            .itertuples(index=False, name=None),
+            pd.concat(
+                [validation[KEY_COLS], test[KEY_COLS]], ignore_index=True
+            ).itertuples(index=False, name=None),
         )
     )
     for model_name, predictions in predictions_by_model.items():
@@ -150,28 +157,34 @@ def main() -> None:
 
     print("Validation mean pinball loss (lower is better)")
     print("=" * 48)
+
     validation_results = []
     for model_name, predictions in predictions_by_model.items():
         score = score_split(model_name, predictions, validation, "validation")
         validation_results.append((model_name, score))
+
     validation_results.sort(key=lambda item: item[1])
+
     for rank, (model_name, score) in enumerate(validation_results, start=1):
         print(f"{rank}. {model_name:<10} {score:.6f}")
 
     best_name, best_score = validation_results[0]
     print(f"\nValidation winner: {best_name} ({best_score:.6f})")
 
-    # FINAL TEST EVALUATION: run only after model selection is complete.
-    # Test metrics are reported for comparison, never used to tune/select models.
+    # Final test evaluation: report only, do not use it to select or tune models.
     print("\nFINAL TEST mean pinball loss (reporting only; do not retune)")
     print("=" * 58)
+
     test_results = []
     for model_name, predictions in predictions_by_model.items():
         score = score_split(model_name, predictions, test, "test")
         test_results.append((model_name, score))
+
     test_results.sort(key=lambda item: item[1])
+
     for rank, (model_name, score) in enumerate(test_results, start=1):
         print(f"{rank}. {model_name:<10} {score:.6f}")
+
 
 if __name__ == "__main__":
     main()
