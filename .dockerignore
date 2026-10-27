@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.vscode/
+data/raw/
+*.log
+mlflow.db
+
