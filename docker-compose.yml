@@ -1,0 +1,35 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: supply_chain_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEFAULT_MODEL=lgbm
+      - PREDICTIONS_DIR=/app/predictions
+      - WEEKLY_PATH=/app/data/processed/weekly.parquet
+      - INVENTORY_PATH=/app/data/processed/inventory.parquet
+      - METRICS_PATH=/app/reports/model_metrics.csv
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: supply_chain_ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
