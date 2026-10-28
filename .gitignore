@@ -30,6 +30,7 @@ data/processed/*
 !data/processed/.gitkeep
 !data/processed/features.parquet
 !data/processed/weekly.parquet
+!data/processed/inventory.parquet
 !data/processed/series_type.csv
 !data/processed/splits.json
 !data/processed/sample_items.csv

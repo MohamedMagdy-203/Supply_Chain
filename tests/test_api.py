@@ -96,11 +96,18 @@ def test_forecast_bad_model_name_422():
 # ===========================================================================
 # /inventory
 # ===========================================================================
-def test_inventory_default_tau_is_075():
-    """cu=0.30, co=0.10 → τ = 0.30 / 0.40 = 0.75"""
+def test_inventory_uses_product_costs():
     r = client.get("/inventory", params={"series_id": SERIES_ID, "origin_week": ORIGIN_WEEK})
     assert r.status_code == 200
-    assert r.json()["tau"] == pytest.approx(0.75, abs=1e-4)
+    body = r.json()
+    assert body["unit_price"] > 0
+    assert body["unit_holding_cost"] > 0
+    assert body["unit_shortage_cost"] > 0
+    assert body["tau"] == pytest.approx(
+        body["unit_shortage_cost"]
+        / (body["unit_shortage_cost"] + body["unit_holding_cost"]),
+        abs=1e-4,
+    )
 
 
 def test_inventory_on_hand_reduces_order():
@@ -219,10 +226,10 @@ def test_orders_returns_all_series():
 
 
 def test_orders_tau_from_costs():
-    """Default cu=0.30, co=0.10 → τ = 0.75"""
     r = client.get("/orders", params={"origin_week": ORIGIN_WEEK})
     body = r.json()
-    assert body["tau"] == pytest.approx(0.75, abs=1e-4)
+    assert body["cost_source"] == "product-specific"
+    assert len({(o["unit_holding_cost"], o["unit_shortage_cost"]) for o in body["orders"]}) > 1
 
 
 def test_orders_explicit_service_level():

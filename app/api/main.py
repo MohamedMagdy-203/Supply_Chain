@@ -122,8 +122,16 @@ def inventory(
         lt=1,
         description="Target service level τ. If omitted, τ = cu / (cu + co).",
     ),
-    cu: float = Query(default=0.30, gt=0, description="Under-stocking cost per unit"),
-    co: float = Query(default=0.10, gt=0, description="Over-stocking cost per unit"),
+    cu: float | None = Query(
+        default=None,
+        gt=0,
+        description="Optional product-cost override for testing.",
+    ),
+    co: float | None = Query(
+        default=None,
+        gt=0,
+        description="Optional product-cost override for testing.",
+    ),
     on_hand: float | None = Query(
         default=None,
         ge=0,
@@ -137,7 +145,15 @@ def inventory(
     stock = get_inventory_stock(series_id, origin_week)
     resolved_on_hand = float(stock["available_stock"]) if on_hand is None else on_hand
 
-    tau = service_level if service_level is not None else policy.critical_ratio(cu, co)
+    product_cu = float(stock["unit_shortage_cost"])
+    product_co = float(stock["unit_holding_cost"])
+    resolved_cu = cu if cu is not None else product_cu
+    resolved_co = co if co is not None else product_co
+    tau = (
+        service_level
+        if service_level is not None
+        else policy.critical_ratio(resolved_cu, resolved_co)
+    )
     S = policy.order_up_to(quantiles, tau)
 
     return InventoryResponse(
@@ -145,11 +161,14 @@ def inventory(
         series_id=series_id,
         origin_week=origin_week,
         tau=round(tau, 4),
-        cu=cu,
-        co=co,
+        cu=round(resolved_cu, 2),
+        co=round(resolved_co, 2),
         on_hand=round(resolved_on_hand, 3),
         reserved_stock=round(float(stock["reserved_stock"]), 3),
         available_stock=round(float(stock["available_stock"]), 3),
+        unit_price=round(float(stock["unit_price"]), 2),
+        unit_holding_cost=round(product_co, 2),
+        unit_shortage_cost=round(product_cu, 2),
         inventory_source="warehouse" if on_hand is None else "manual override",
         order_up_to=round(S, 3),
         order_qty=round(policy.order_quantity(S, resolved_on_hand), 3),
@@ -259,8 +278,16 @@ def orders(
         lt=1,
         description="Global service level τ. If omitted, τ = cu / (cu + co).",
     ),
-    cu: float = Query(default=0.30, gt=0, description="Under-stocking cost per unit"),
-    co: float = Query(default=0.10, gt=0, description="Over-stocking cost per unit"),
+    cu: float | None = Query(
+        default=None,
+        gt=0,
+        description="Optional uniform cost override for testing.",
+    ),
+    co: float | None = Query(
+        default=None,
+        gt=0,
+        description="Optional uniform cost override for testing.",
+    ),
     on_hand: float | None = Query(
         default=None,
         ge=0,
@@ -291,16 +318,26 @@ def orders(
                    f"Available range: {int(df['origin_week'].min())}–{int(df['origin_week'].max())}.",
         )
 
-    tau = service_level if service_level is not None else policy.critical_ratio(cu, co)
     resolved_model = model or DEFAULT_MODEL
 
     order_items: list[OrderItem] = []
+    cost_pairs: list[tuple[float, float]] = []
     for row in week_df.itertuples():
         quantiles = {c: float(getattr(row, c)) for c in QUANTILE_COLS}
-        S = policy.order_up_to(quantiles, tau)
         stock = get_inventory_stock(str(row.series_id), origin_week)
+        product_cu = float(stock["unit_shortage_cost"])
+        product_co = float(stock["unit_holding_cost"])
+        resolved_cu = cu if cu is not None else product_cu
+        resolved_co = co if co is not None else product_co
+        tau = (
+            service_level
+            if service_level is not None
+            else policy.critical_ratio(resolved_cu, resolved_co)
+        )
+        S = policy.order_up_to(quantiles, tau)
         resolved_on_hand = float(stock["available_stock"]) if on_hand is None else on_hand
         qty = policy.order_quantity(S, resolved_on_hand)
+        cost_pairs.append((resolved_cu, resolved_co))
         order_items.append(
             OrderItem(
                 series_id=str(row.series_id),
@@ -311,6 +348,9 @@ def orders(
                 current_stock=round(float(stock["current_stock"]), 3),
                 reserved_stock=round(float(stock["reserved_stock"]), 3),
                 available_stock=round(float(stock["available_stock"]), 3),
+                unit_price=round(float(stock["unit_price"]), 2),
+                unit_holding_cost=round(product_co, 2),
+                unit_shortage_cost=round(product_cu, 2),
             )
         )
 
@@ -320,9 +360,18 @@ def orders(
     return OrdersResponse(
         model=resolved_model,
         origin_week=origin_week,
-        tau=round(tau, 4),
-        cu=cu,
-        co=co,
+        tau=round(
+            service_level
+            if service_level is not None
+            else sum(
+                policy.critical_ratio(shortage, holding)
+                for shortage, holding in cost_pairs
+            ) / len(cost_pairs),
+            4,
+        ),
+        cu=round(sum(pair[0] for pair in cost_pairs) / len(cost_pairs), 2),
+        co=round(sum(pair[1] for pair in cost_pairs) / len(cost_pairs), 2),
+        cost_source="uniform override" if cu is not None or co is not None else "product-specific",
         on_hand_source="warehouse" if on_hand is None else "manual override",
         n_series=len(order_items),
         orders=order_items,

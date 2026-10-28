@@ -42,6 +42,9 @@ class InventoryResponse(BaseModel):
     on_hand: float
     reserved_stock: float = 0
     available_stock: float = 0
+    unit_price: float = Field(description="Product unit price assumption")
+    unit_holding_cost: float = Field(description="Product-specific holding cost per unit")
+    unit_shortage_cost: float = Field(description="Product-specific shortage cost per unit")
     inventory_source: str = "warehouse"
     order_up_to: float = Field(description="S, the target stock level")
     order_qty: float = Field(description="max(0, S - on_hand)")
@@ -103,14 +106,18 @@ class OrderItem(BaseModel):
     current_stock: float = 0
     reserved_stock: float = 0
     available_stock: float = 0
+    unit_price: float = Field(description="Product unit price assumption")
+    unit_holding_cost: float = Field(description="Product-specific holding cost per unit")
+    unit_shortage_cost: float = Field(description="Product-specific shortage cost per unit")
 
 
 class OrdersResponse(BaseModel):
     model: str
     origin_week: int
-    tau: float
-    cu: float
-    co: float
+    tau: float = Field(description="Average service level across products")
+    cu: float = Field(description="Average shortage cost across products")
+    co: float = Field(description="Average holding cost across products")
+    cost_source: str = "product-specific"
     on_hand_source: str = Field(description="Source of the inventory balance used.")
     n_series: int
     orders: list[OrderItem]

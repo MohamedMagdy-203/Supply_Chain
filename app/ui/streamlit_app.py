@@ -63,6 +63,38 @@ st.markdown(
     [data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
         padding-top: 0 !important;
     }
+    [data-testid="stSidebar"] [data-testid="stMetric"] {
+        background: #FFFFFF;
+        border-color: rgba(255,255,255,.35);
+    }
+    [data-testid="stSidebar"] [data-testid="stMetricLabel"],
+    [data-testid="stSidebar"] [data-testid="stMetricLabel"] p {
+        color: #64748B !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stMetricValue"],
+    [data-testid="stSidebar"] [data-testid="stMetricValue"] div {
+        color: #0B1B70 !important;
+    }
+    .product-cost-card {
+        background: #FFFFFF;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin: 4px 0 10px;
+        box-shadow: 0 2px 8px rgba(20,40,160,.06);
+    }
+    .product-cost-card .cost-label {
+        color: #64748B !important;
+        font-size: .78rem;
+        line-height: 1.2;
+    }
+    .product-cost-card .cost-value {
+        color: #0B1B70 !important;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.25;
+        margin-top: 3px;
+    }
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
         margin-top: 0.25rem !important;
@@ -347,6 +379,16 @@ st.sidebar.caption(f"Store: {selected_store}")
 st.sidebar.caption(f"Department: {selected_department}")
 st.sidebar.caption(f"Product: {selected_product}")
 
+product_cost_data = api_get("/inventory", params={
+    "series_id": selected_series,
+    "origin_week": origin_weeks[-1],
+    "model": selected_model,
+})
+if product_cost_data:
+    calculated_tau = product_cost_data["tau"]
+else:
+    calculated_tau = 0.75
+
 # Origin week selector (Replay of test split)
 selected_week = st.sidebar.selectbox(
     "Last Actual Week",
@@ -354,28 +396,6 @@ selected_week = st.sidebar.selectbox(
     index=len(origin_weeks) - 1,
     help="The forecast and order recommendation apply to the following week.",
 )
-
-st.sidebar.markdown("---")
-st.sidebar.header("Business Cost Assumptions")
-
-cu = st.sidebar.number_input(
-    "Shortage Cost per Unit",
-    min_value=0.01,
-    max_value=100.0,
-    value=0.30,
-    step=0.05,
-    help="Estimated business impact when demand cannot be fulfilled.",
-)
-co = st.sidebar.number_input(
-    "Excess Inventory Cost per Unit",
-    min_value=0.01,
-    max_value=100.0,
-    value=0.10,
-    step=0.02,
-    help="Estimated holding, markdown, or obsolescence cost.",
-)
-
-calculated_tau = round(cu / (cu + co), 4)
 
 custom_tau = st.sidebar.checkbox("Set a Custom Service Level", value=False)
 if custom_tau:
@@ -396,8 +416,6 @@ st.sidebar.info("Inventory is loaded by product and week from the warehouse bala
 portfolio_orders_data = api_get("/orders", params={
     "origin_week": selected_week,
     "model": selected_model,
-    "cu": cu,
-    "co": co,
     **({"service_level": tau} if custom_tau else {}),
 })
 
@@ -416,9 +434,6 @@ tab_forecast, tab_inventory, tab_scenarios, tab_why, tab_models = st.tabs([
 # Tab 1: Forecast
 # ===========================================================================
 with tab_forecast:
-    st.subheader(f"Demand Outlook: {selected_store} | {selected_department} | {selected_product}")
-    st.caption(f"Store: {selected_store}  |  Department: {selected_department}  |  Product: {selected_product}")
-
     # Fetch Forecast & History
     fc_data = api_get("/forecast", params={
         "series_id": selected_series,
@@ -438,6 +453,7 @@ with tab_forecast:
             portfolio_orders_data.get("orders", []) if portfolio_orders_data else []
         )
         if not analytics_df.empty:
+            st.markdown("### Executive Summary")
             products_requiring_order = int((analytics_df["order_qty"] > 0).sum())
             critical_products = int((analytics_df["priority"] == "Critical").sum())
             excess_products = int(
@@ -457,6 +473,30 @@ with tab_forecast:
                 'below half of expected demand.</div>',
                 unsafe_allow_html=True,
             )
+
+        if product_cost_data:
+            st.markdown("### Product Cost Profile")
+            cost_col1, cost_col2, cost_col3 = st.columns(3)
+            cost_cards = (
+                ("Unit Price", "unit_price"),
+                ("Holding Cost per Unit", "unit_holding_cost"),
+                ("Shortage Cost per Unit", "unit_shortage_cost"),
+            )
+            for column, (label, key) in zip(
+                (cost_col1, cost_col2, cost_col3),
+                cost_cards,
+            ):
+                with column:
+                    st.markdown(
+                        f'<div class="product-cost-card">'
+                        f'<div class="cost-label">{label}</div>'
+                        f'<div class="cost-value">${product_cost_data[key]:.2f}</div>'
+                        "</div>",
+                        unsafe_allow_html=True,
+                    )
+
+        st.subheader(f"Demand Outlook: {selected_store} | {selected_department} | {selected_product}")
+        st.caption(f"Store: {selected_store}  |  Department: {selected_department}  |  Product: {selected_product}")
 
         forecast_col1, forecast_col2, forecast_col3, forecast_col4 = st.columns(4)
         forecast_col1.metric("Expected Demand", format_units(fc_data["q50"]))
@@ -549,8 +589,6 @@ with tab_inventory:
         "series_id": selected_series,
         "origin_week": selected_week,
         "model": selected_model,
-        "cu": cu,
-        "co": co,
     }
     if custom_tau:
         inv_params["service_level"] = tau
@@ -597,32 +635,30 @@ with tab_inventory:
         source = orders_data.get("on_hand_source", "warehouse")
         col_b3.metric("Stock Data", "Warehouse" if source == "warehouse" else source)
 
-        orders_df = analytics_df.copy()
-        orders_df = orders_df.rename(columns={
+        display_orders = analytics_df[
+            [
+                "store",
+                "department",
+                "product",
+                "priority",
+                "q50",
+                "available_stock",
+                "order_up_to",
+                "order_qty",
+            ]
+        ].head(10).copy()
+        display_orders = display_orders.rename(columns={
+            "q50": "expected_demand",
             "order_up_to": "target_stock",
             "order_qty": "recommended_order",
-            "q50": "expected_demand",
-            "tau": "service_target",
-            "current_stock": "current_stock",
-            "reserved_stock": "reserved_stock",
-            "available_stock": "available_stock",
         })
-        display_orders = orders_df.head(10).copy()
         display_orders["target_stock"] = display_orders["target_stock"].round(0).astype(int)
         display_orders["recommended_order"] = display_orders["recommended_order"].round(0).astype(int)
         display_orders["expected_demand"] = display_orders["expected_demand"].round(0).astype(int)
-        display_orders["current_stock"] = display_orders["current_stock"].round(0).astype(int)
-        display_orders["reserved_stock"] = display_orders["reserved_stock"].round(0).astype(int)
         display_orders["available_stock"] = display_orders["available_stock"].round(0).astype(int)
-        display_orders["service_target"] = display_orders["service_target"].map(lambda value: f"{value:.0%}")
         display_orders.columns = [
-            "Product ID", "Target Stock", "Recommended Order", "Expected Demand",
-            "Service Target", "Current Stock", "Reserved Stock", "Available Stock",
-            "Store", "Department", "Product", "Coverage Ratio", "Uncertainty Ratio", "Priority"
-        ]
-        display_orders = display_orders[
-            ["Store", "Department", "Product", "Priority", "Expected Demand",
-             "Available Stock", "Target Stock", "Recommended Order"]
+            "Store", "Department", "Product", "Priority", "Expected Demand",
+            "Available Stock", "Target Stock", "Recommended Order",
         ]
         st.markdown(display_orders.to_html(
             index=False, classes="business-table", border=0, justify="left"

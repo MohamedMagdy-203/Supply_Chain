@@ -94,7 +94,16 @@ def _read_inventory() -> pd.DataFrame:
     if not INVENTORY_PATH.exists():
         raise FileNotFoundError(str(INVENTORY_PATH))
     df = pd.read_parquet(INVENTORY_PATH)
-    required = {"series_id", "origin_week", "current_stock", "reserved_stock", "available_stock"}
+    required = {
+        "series_id",
+        "origin_week",
+        "current_stock",
+        "reserved_stock",
+        "available_stock",
+        "unit_price",
+        "unit_holding_cost",
+        "unit_shortage_cost",
+    }
     missing = sorted(required.difference(df.columns))
     if missing:
         raise ValueError(f"{INVENTORY_PATH.name} is missing columns: {missing}")
